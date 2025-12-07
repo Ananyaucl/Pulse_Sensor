@@ -1,8 +1,8 @@
 #include <SPI.h>
 #include <WiFiNINA.h>
-#include <PubSubClient.h>
 #include "arduino_secrets.h" 
 #include <utility/wifi_drv.h>
+#include "LEDAnimationFunctions.h"
 
 const char* ssid          = SECRET_SSID;
 const char* password      = SECRET_PASS;
@@ -30,14 +30,11 @@ void setup() {
       Serial.println(WiFi.localIP());
     }
   }
-
+  initStressDisplay();
 }
 
 void loop() {
-  if (client.available()) {
-    char c = client.read();
-    Serial.print(c);
-  }
+
   if (!client.connected()) {
     Serial.println();
     Serial.println("disconnecting.");
@@ -50,6 +47,10 @@ void loop() {
   }
   while (client.available()) {
     char c = client.read();
-    Serial.print(c);
+     if (c >= '0' && c <= '9') {   // ONLY accept valid digits
+        int stateValue = c - '0';
+        setStressLevel(stateValue);          // ← instantly switches animation
+        updateStressDisplay();
+    }
   }
 }
