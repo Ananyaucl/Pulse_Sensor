@@ -2,10 +2,6 @@
 #include <math.h>
 #include "secrets.h"
 
-// WIFI SETTINGS 
-// const char* ssid     = "CE-Hub-Student";
-// const char* password = "casa-ce-gagarin-public-service";
-
 const char* ssid     = SECRET_SSID;
 const char* password = SECRET_PASS;
 
@@ -14,7 +10,7 @@ WiFiClient client;
 
 // PULSE SENSOR SETTINGS 
 const int SENSOR_PIN = 14;      // Only ADC on ESP8266
-const int THRESHOLD  = 550;     // Adjust depending on your sensor
+const int THRESHOLD  = 520;     
 
 // Beat detection helper variables
 bool beatDetected = false;
