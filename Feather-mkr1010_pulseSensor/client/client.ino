@@ -1,56 +1,66 @@
 #include <SPI.h>
 #include <WiFiNINA.h>
-#include "arduino_secrets.h" 
-#include <utility/wifi_drv.h>
+#include <ArduinoMqttClient.h>
+#include "arduino_secrets.h"
 #include "LEDAnimationFunctions.h"
 
-const char* ssid          = SECRET_SSID;
-const char* password      = SECRET_PASS;
+const char* ssid     = SECRET_SSID;
+const char* password = SECRET_PASS;
+const char* mqtt_server   = "mqtt.cetools.org";
+int mqtt_port = 1883;
+const char* mqtt_topic = "student/ucfnake/pulse";      
 
-int status = WL_IDLE_STATUS;   
-IPAddress server(192,168,0,40); 
+WiFiClient wifiClient;
+MqttClient mqttClient(wifiClient);
 
-WiFiClient client;
+int status = WL_IDLE_STATUS;
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("Attempting to connect to network");
+  delay(200);
+
+  Serial.println("Attempting to connect to WiFi...");
 
   status = WiFi.begin(ssid, password);
-  if (status != WL_CONNECTED){
+  if (status != WL_CONNECTED) {
     Serial.println("Unable to connect to network");
-    while(true);
+    while (true);
   }
-  else{
-    Serial.println("Connected to WiFi");
-    Serial.println("\nStarting connection...");
 
-    if (client.connect(server, 5000)) {
-      Serial.println("connected");
-      Serial.println(WiFi.localIP());
-    }
+  Serial.println("Connected to WiFi");
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
+  Serial.print("Connecting to MQTT broker...");
+
+  if (!mqttClient.connect(mqtt_server, mqtt_port)) {
+    Serial.print("MQTT connection failed! Error code = ");
+    Serial.println(mqttClient.connectError());
+    while (1);
   }
+  Serial.println("Connected to MQTT.");
+
+
+  mqttClient.subscribe(mqtt_topic);
+  Serial.print("Subscribed to topic: ");
+  Serial.println(mqtt_topic);
+
   initStressDisplay();
 }
 
 void loop() {
+ 
+  mqttClient.poll();
 
-  if (!client.connected()) {
-    Serial.println();
-    Serial.println("disconnecting.");
-    client.stop();
+  // If there is a message available
+  if (mqttClient.parseMessage()) {
+    while (mqttClient.available()) {
+      char c = mqttClient.read();
 
-    if (client.connect(server, 5000)) {
-      Serial.println("Reconnected!");
-    }
-    return;
-  }
-  while (client.available()) {
-    char c = client.read();
-     if (c >= '0' && c <= '9') {   // ONLY accept valid digits
-        int stateValue = c - '0';
-        setStressLevel(stateValue);          // ← instantly switches animation
+      if (c >= '0' && c <= '9') {
+        int value = c - '0';
+        setStressLevel(value);  
         updateStressDisplay();
+      }
     }
   }
 }
